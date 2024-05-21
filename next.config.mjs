@@ -1,4 +1,13 @@
 /** @type {import('next').NextConfig} */
-const nextConfig = {};
+const nextConfig = {
+  reactStrictMode: true,
+  images: {
+    domains: [
+      's.gravatar.com',
+      'lh3.googleusercontent.com',
+      'https://uxwing.com',
+    ],
+  },
+};
 
 export default nextConfig;
