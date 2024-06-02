@@ -157,6 +157,9 @@ export const getServerSideProps = async context => {
         messages: chat.messages.map(message => ({
           ...message,
           _id: uuid(),
+          messageTime: message.messageTime
+            ? message.messageTime.toISOString()
+            : null, // Convert Date to string if it exists
         })),
       },
     };

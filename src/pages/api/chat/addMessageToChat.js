@@ -18,6 +18,7 @@ export default async function handler(req, res) {
     console.log(
       `Received chatId: ${chatId}, role: ${role}, content: ${content}`,
     );
+    console.log(`userid: ${user.sub}, chatID: ${chatId}, content: ${content}`);
 
     const chat = await db.collection('chats').findOneAndUpdate(
       {
@@ -29,6 +30,7 @@ export default async function handler(req, res) {
           messages: {
             role,
             content,
+            messageTime: new Date(),
           },
         },
       },
@@ -36,8 +38,11 @@ export default async function handler(req, res) {
         returnDocument: 'after',
       },
     );
+    console.log('chat = ');
+    console.log(typeof chat);
+    console.log(chat);
 
-    if (!chat.value) {
+    if (!chat) {
       console.log('Chat not found or user not authorized');
       return res
         .status(404)
@@ -46,8 +51,8 @@ export default async function handler(req, res) {
 
     res.status(200).json({
       chat: {
-        ...chat.value,
-        _id: chat.value._id.toString(),
+        ...chat,
+        _id: chat._id.toString(),
       },
     });
   } catch (e) {

@@ -29,7 +29,6 @@ export default async function handler(req, res) {
     const db = client.db('NsfDatabase');
     const chat = await db.collection('chats').insertOne({
       userId: user.sub,
-      FullName: user.name,
       messages: [newUserMessage],
       title: message,
       createdAt: new Date(),
