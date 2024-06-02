@@ -4,6 +4,26 @@ export const config = {
   runtime: 'edge',
 };
 
+async function summarizeChatHistory(chatMessages) {
+  const prompt = chatMessages
+    .map(msg => `${msg.role}: ${msg.content}`)
+    .join('\n');
+  const response = await fetch('https://api.openai.com/v1/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${process.env.OPEN_API_KEY}`,
+    },
+    body: JSON.stringify({
+      model: 'text-davinci-003',
+      prompt: `Summarize the following chat history:\n${prompt}`,
+      max_tokens: 150,
+    }),
+  });
+  const data = await response.json();
+  return data.choices[0].text.trim();
+}
+
 export default async function handler(req) {
   try {
     const { chatId: chatIdFromParam, message } = await req.json();
@@ -39,19 +59,29 @@ export default async function handler(req) {
       chatMessages = json.messages || [];
     }
 
-    const messagesToInclude = [];
-    chatMessages.reverse();
-
+    // Summarize chat history if it gets too long
+    const MAX_TOKENS = 2000;
+    let messagesToInclude = [];
     let usedTokens = 0;
+    let allMessages = [];
 
+    chatMessages.reverse();
     for (let chatMessage of chatMessages) {
+      allMessages.push(chatMessage);
       const messageTokens = chatMessage.content.length / 4;
       usedTokens = usedTokens + messageTokens;
-      if (usedTokens <= 2000) {
-        messagesToInclude.push(chatMessage);
-      } else {
-        break;
+      if (usedTokens > MAX_TOKENS) {
+        const summary = await summarizeChatHistory(allMessages);
+        messagesToInclude = [
+          {
+            role: 'system',
+            content: `Summary of previous messages: ${summary}`,
+          },
+        ];
+        usedTokens = summary.length / 4;
+        allMessages = [];
       }
+      messagesToInclude.push(chatMessage);
     }
 
     messagesToInclude.reverse();
