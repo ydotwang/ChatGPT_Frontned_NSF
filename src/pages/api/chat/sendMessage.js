@@ -6,18 +6,34 @@ export const config = {
 
 export default async function handler(req) {
   try {
-    const { message } = await req.json();
+    const { chatId: chatIdFromParam, message } = await req.json();
+    let chatId = chatIdFromParam;
     const origin = req.headers.get('origin');
-    const response = await fetch(`${origin}/api/chat/createNewChat`, {
-      method: 'POST',
-      headers: {
-        'content-type': 'application/json',
-        cookie: req.headers.get('cookie'),
-      },
-      body: JSON.stringify({ message }),
-    });
-    const json = await response.json();
-    const chatId = json._id;
+
+    let newChatId;
+
+    if (chatId) {
+      const response = await fetch(`${origin}/api/chat/addMessageToChat`, {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          cookie: req.headers.get('cookie'),
+        },
+        body: JSON.stringify({ chatId, role: 'user', content: message }),
+      });
+    } else {
+      const response = await fetch(`${origin}/api/chat/createNewChat`, {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          cookie: req.headers.get('cookie'),
+        },
+        body: JSON.stringify({ message }),
+      });
+      const json = await response.json();
+      chatId = json._id;
+      newChatId = json._id;
+    }
 
     const stream = await OpenAIEdgeStream(
       'https://api.openai.com/v1/chat/completions',
@@ -35,7 +51,9 @@ export default async function handler(req) {
       },
       {
         onBeforeStream: ({ emit }) => {
-          emit(chatId, 'newChatId');
+          if (newChatId) {
+            emit(newChatId, 'newChatId');
+          }
         },
         onAfterStream: async ({ fullContent }) => {
           const addMessageUrl = `${origin}/api/chat/addMessageToChat`;
