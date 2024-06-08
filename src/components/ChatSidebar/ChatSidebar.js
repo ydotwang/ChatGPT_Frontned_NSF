@@ -24,22 +24,29 @@ export const ChatSidebar = ({ chatId }) => {
   }, [chatId]);
 
   return (
-    <div className="flex flex-col overflow-hidden text-white bg-slate-900 p-4">
+    <div
+      className="flex flex-col overflow-hidden text-white bg-slate-900 p-4"
+      role="navigation"
+      aria-label="Chat sidebar"
+    >
       <Link
-        alt="New Chat link"
+        aria-label="New Chat"
         href="/chat"
         className="side-menu-item bg-emerald-500 hover:bg-emerald-600"
       >
-        <FontAwesomeIcon icon={faPlus} aria-hidden="true"></FontAwesomeIcon>
-        New chat
+        <FontAwesomeIcon icon={faPlus} aria-hidden="true" /> New chat
       </Link>
-      <div className="flex-1 overflow-auto bg-gray-950">
+      <div
+        className="flex-1 overflow-auto bg-gray-950"
+        role="region"
+        aria-label="Chat list"
+      >
         {chatList.map(chat => (
           <Link
-            alt={
+            aria-label={
               chatId === chat._id
-                ? `current chat link: ${chat.title}`
-                : `old chat link: ${chat.title}`
+                ? `Current chat: ${chat.title}`
+                : `Chat: ${chat.title}`
             }
             className={`side-menu-item ${
               chatId === chat._id ? 'bg-gray-700' : ''
@@ -47,15 +54,13 @@ export const ChatSidebar = ({ chatId }) => {
             key={chat._id}
             href={`/chat/${chat._id}`}
           >
-            <FontAwesomeIcon
-              icon={faMessage}
-              aria-hidden="true"
-            ></FontAwesomeIcon>
-            {chat.title}
+            <FontAwesomeIcon icon={faMessage} aria-hidden="true" /> {chat.title}
           </Link>
         ))}
       </div>
-      <Link href="/api/auth/logout">Logout</Link>
+      <Link href="/api/auth/logout" aria-label="Logout">
+        Logout
+      </Link>
     </div>
   );
 };

@@ -1,0 +1,63 @@
+/* styles/Home.module.css */
+.container {
+  background-color: #1e1e1e;
+  color: #ffffff;
+  height: 100vh;
+}
+
+.textarea,
+.input,
+.button {
+  background-color: #333333;
+  color: #ffffff;
+  border: none;
+}
+
+.textarea::placeholder {
+  color: #aaaaaa;
+}
+
+.textarea:focus,
+.input:focus,
+.button:focus {
+  outline: none;
+}
+
+.scrollbar-hidden::-webkit-scrollbar {
+  display: none;
+}
+
+.scrollbar-hidden {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+}
+
+.btn {
+  background-color: #4caf50;
+  color: #ffffff;
+  padding: 0.5rem 1rem;
+  border-radius: 0.25rem;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.btn:hover {
+  background-color: #45a049;
+}
+
+.footer {
+  background-color: #333333;
+}
+
+.logout {
+  background-color: #d9534f;
+  color: #ffffff;
+  padding: 0.5rem 1rem;
+  border-radius: 0.25rem;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.logout:hover {
+  background-color: #c9302c;
+}

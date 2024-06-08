@@ -17,12 +17,16 @@ export default function Home() {
         <div>
           {!user && (
             <>
-              <Link href="/api/auth/login" className="btn" alt="Sign up Button">
+              <Link href="/api/auth/login" className="btn" alt="Login Button">
                 Login
               </Link>
             </>
           )}
-          {!!user && <Link href="/api/auth/logout">logout</Link>}
+          {!!user && (
+            <Link href="/api/auth/logout" alt="Logout Button">
+              logout
+            </Link>
+          )}
         </div>
       </div>
     </>
