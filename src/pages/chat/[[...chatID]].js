@@ -1,6 +1,6 @@
 import Head from 'next/head';
 import { ChatSidebar } from '@/components/ChatSidebar';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { streamReader } from 'openai-edge-stream';
 import { v4 as uuid } from 'uuid';
 import { Message } from '@/components/Message';
@@ -11,6 +11,7 @@ import clientPromise from '@/lib/mongodb';
 import { ObjectId } from 'mongodb';
 import LoginMessage from '@/components/LoginMessage';
 import IntentDialog from '@/components/IntentDialog';
+import AnnotationDialog from '@/components/AnnotationDialog';
 
 export default function Home({ chatId, title, messages = [] }) {
   console.log('props recorded', title, messages);
@@ -24,6 +25,10 @@ export default function Home({ chatId, title, messages = [] }) {
   const [fullMessage, setFullMessage] = useState('');
   const router = useRouter();
   const [showIntentDialog, setShowIntentDialog] = useState(false);
+  const [showAnnotationDialog, setShowAnnotationDialog] = useState(false);
+  const isMac =
+    typeof window !== 'undefined' &&
+    /Mac|iPod|iPhone|iPad/.test(window.navigator.platform);
 
   const handleIntentSubmit = async intent => {
     const response = await fetch('/api/chat/saveIntent', {
@@ -48,6 +53,25 @@ export default function Home({ chatId, title, messages = [] }) {
 
   const handleAcknowledge = () => {
     setshowLoginMessage(false);
+  };
+
+  const handleAnnotationSubmit = async annotation => {
+    const response = await fetch('/api/chat/saveAnnotation', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({ chatId, annotation }),
+    });
+    const data = await response.json();
+
+    if (data.message === 'Annotation saved successfully') {
+      setShowAnnotationDialog(false);
+    } else {
+      alert(
+        'An error occurred while saving your annotation. Please try again.',
+      );
+    }
   };
 
   useEffect(() => {
@@ -120,6 +144,30 @@ export default function Home({ chatId, title, messages = [] }) {
     setGeneratingResponse(false);
   };
 
+  const handleKeyDown = useCallback(
+    e => {
+      if (e.key === 'Enter' && (isMac ? !e.metaKey : !e.ctrlKey)) {
+        e.preventDefault();
+        handleSubmit(e);
+      } else if (e.key === 'Enter' && (isMac ? e.metaKey : e.ctrlKey)) {
+        setMessageText(prev => prev + '\n');
+      } else if (e.key === 'A' && (isMac ? e.shiftKey : e.shiftKey)) {
+        e.preventDefault();
+        if (chatId) {
+          setShowAnnotationDialog(true);
+        }
+      }
+    },
+    [chatId, handleSubmit, isMac],
+  );
+
+  useEffect(() => {
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [handleKeyDown]);
+
   const allMessages = [...messages, ...newChatMessages];
   return (
     <>
@@ -129,8 +177,13 @@ export default function Home({ chatId, title, messages = [] }) {
           onClear={handleIntentClear}
         />
       )}
+      {showAnnotationDialog && (
+        <AnnotationDialog
+          onSubmit={handleAnnotationSubmit}
+          onClose={() => setShowAnnotationDialog(false)}
+        />
+      )}
       {showLoginMessage && <LoginMessage onAcknowledge={handleAcknowledge} />}{' '}
-      {/* Conditional rendering of LoginDialog */}
       <div
         className={`grid h-screen grid-cols-[260px_1fr] ${
           showLoginMessage ? 'hidden' : ''
@@ -147,14 +200,19 @@ export default function Home({ chatId, title, messages = [] }) {
             aria-label="Chat messages"
           >
             <div className="mb-auto">
-              {allMessages.map(message => (
-                <Message
-                  key={message._id}
-                  role={message.role}
-                  content={message.content}
-                  user={user}
-                />
-              ))}
+              {allMessages
+                .filter(
+                  message =>
+                    message.role === 'user' || message.role === 'assistant',
+                )
+                .map(message => (
+                  <Message
+                    key={message._id}
+                    role={message.role}
+                    content={message.content}
+                    user={user}
+                  />
+                ))}
               {!!incomingMessage && (
                 <Message role="assistant" content={incomingMessage} />
               )}
