@@ -10,6 +10,7 @@ import { getSession } from '@auth0/nextjs-auth0';
 import clientPromise from '@/lib/mongodb';
 import { ObjectId } from 'mongodb';
 import LoginMessage from '@/components/LoginMessage';
+import IntentDialog from '@/components/IntentDialog';
 
 export default function Home({ chatId, title, messages = [] }) {
   console.log('props recorded', title, messages);
@@ -22,6 +23,28 @@ export default function Home({ chatId, title, messages = [] }) {
   const { user } = useUser();
   const [fullMessage, setFullMessage] = useState('');
   const router = useRouter();
+  const [showIntentDialog, setShowIntentDialog] = useState(false);
+
+  const handleIntentSubmit = async intent => {
+    const response = await fetch('/api/chat/saveIntent', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({ chatId, intent }),
+    });
+    const data = await response.json();
+
+    if (data.message === 'Intent saved successfully') {
+      setShowIntentDialog(false);
+    } else {
+      alert('An error occurred while saving your intent. Please try again.');
+    }
+  };
+
+  const handleIntentClear = () => {
+    setShowIntentDialog(true);
+  };
 
   const handleAcknowledge = () => {
     setshowLoginMessage(false);
@@ -86,6 +109,7 @@ export default function Home({ chatId, title, messages = [] }) {
       console.log('Message: ', message);
       if (message.event === 'newChatId') {
         setNewChatId(message.content);
+        setShowIntentDialog(true);
       } else {
         setIncomingMessage(s => `${s}${message.content}`);
         content += message.content;
@@ -99,6 +123,12 @@ export default function Home({ chatId, title, messages = [] }) {
   const allMessages = [...messages, ...newChatMessages];
   return (
     <>
+      {showIntentDialog && (
+        <IntentDialog
+          onSubmit={handleIntentSubmit}
+          onClear={handleIntentClear}
+        />
+      )}
       {showLoginMessage && <LoginMessage onAcknowledge={handleAcknowledge} />}{' '}
       {/* Conditional rendering of LoginDialog */}
       <div
@@ -136,7 +166,10 @@ export default function Home({ chatId, title, messages = [] }) {
             aria-label="Message input area"
           >
             <form onSubmit={handleSubmit} aria-label="Send message form">
-              <fieldset className="flex gap-2" disabled={generatingResponse}>
+              <fieldset
+                className="flex gap-2"
+                disabled={generatingResponse || showIntentDialog}
+              >
                 <textarea
                   value={messageText}
                   onChange={e => setMessageText(e.target.value)}
