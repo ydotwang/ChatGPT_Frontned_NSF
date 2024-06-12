@@ -22,7 +22,7 @@ export default async function handler(req, res) {
             _id: new ObjectId(),
             role: 'annotation',
             content: annotation,
-            timestamp: new Date(),
+            messageTime: new Date(),
           },
         },
       },

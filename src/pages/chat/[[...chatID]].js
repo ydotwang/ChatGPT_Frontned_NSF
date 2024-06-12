@@ -12,23 +12,26 @@ import { ObjectId } from 'mongodb';
 import LoginMessage from '@/components/LoginMessage';
 import IntentDialog from '@/components/IntentDialog';
 import AnnotationDialog from '@/components/AnnotationDialog';
+import EndChatDialog from '@/components/EndChatDialog';
 
-export default function Home({ chatId, title, messages = [] }) {
-  console.log('props recorded', title, messages);
+export default function Home({ chatId, messages = [], feedback }) {
   const [showLoginMessage, setshowLoginMessage] = useState(true);
   const [newChatId, setNewChatId] = useState(null);
   const [incomingMessage, setIncomingMessage] = useState('');
   const [messageText, setMessageText] = useState('');
   const [newChatMessages, setNewChatMessages] = useState([]);
   const [generatingResponse, setGeneratingResponse] = useState(false);
-  const { user } = useUser();
-  const [fullMessage, setFullMessage] = useState('');
-  const router = useRouter();
   const [showIntentDialog, setShowIntentDialog] = useState(false);
   const [showAnnotationDialog, setShowAnnotationDialog] = useState(false);
+  const [showEndChatDialog, setShowEndChatDialog] = useState(false);
+  const { user } = useUser();
+  const [fullMessage, setFullMessage] = useState('');
+  const [chatFeedback, setChatFeedback] = useState(feedback ? feedback : '');
   const isMac =
     typeof window !== 'undefined' &&
     /Mac|iPod|iPhone|iPad/.test(window.navigator.platform);
+
+  const router = useRouter();
 
   const handleIntentSubmit = async intent => {
     const response = await fetch('/api/chat/saveIntent', {
@@ -74,6 +77,28 @@ export default function Home({ chatId, title, messages = [] }) {
     }
   };
 
+  const handleEndChat = () => {
+    setShowEndChatDialog(true);
+  };
+
+  const handleEndChatSubmit = async feedback => {
+    const response = await fetch('/api/chat/saveFeedback', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({ chatId, feedback }),
+    });
+    const data = await response.json();
+
+    if (data.message === 'Feedback saved successfully') {
+      setShowEndChatDialog(false);
+      setChatFeedback(feedback);
+    } else {
+      alert('An error occurred while saving your feedback. Please try again.');
+    }
+  };
+
   useEffect(() => {
     if (!generatingResponse && fullMessage) {
       setNewChatMessages(prev => [
@@ -99,6 +124,12 @@ export default function Home({ chatId, title, messages = [] }) {
       router.push(`/chat/${newChatId}`);
     }
   }, [newChatId, generatingResponse]);
+
+  useEffect(() => {
+    setNewChatMessages([]);
+    setNewChatId(null);
+    setChatFeedback(feedback ? feedback : '');
+  }, [chatId, feedback]);
 
   const handleSubmit = async e => {
     e.preventDefault();
@@ -183,6 +214,14 @@ export default function Home({ chatId, title, messages = [] }) {
           onClose={() => setShowAnnotationDialog(false)}
         />
       )}
+      {showEndChatDialog && (
+        <EndChatDialog
+          chatId={chatId}
+          messages={allMessages}
+          onSubmit={handleEndChatSubmit}
+          onClose={() => setShowEndChatDialog(false)}
+        />
+      )}
       {showLoginMessage && <LoginMessage onAcknowledge={handleAcknowledge} />}{' '}
       <div
         className={`grid h-screen grid-cols-[260px_1fr] ${
@@ -226,7 +265,9 @@ export default function Home({ chatId, title, messages = [] }) {
             <form onSubmit={handleSubmit} aria-label="Send message form">
               <fieldset
                 className="flex gap-2"
-                disabled={generatingResponse || showIntentDialog}
+                disabled={
+                  generatingResponse || showIntentDialog || chatFeedback !== ''
+                }
               >
                 <textarea
                   value={messageText}
@@ -237,6 +278,14 @@ export default function Home({ chatId, title, messages = [] }) {
                 ></textarea>
                 <button className="btn" type="submit" aria-label="Send message">
                   Send
+                </button>
+                <button
+                  type="button"
+                  onClick={handleEndChat}
+                  className="btn bg-red-600 text-white hover:bg-red-800"
+                  aria-label="End chat"
+                >
+                  End Chat
                 </button>
               </fieldset>
             </form>
@@ -263,7 +312,6 @@ export const getServerSideProps = async context => {
     return {
       props: {
         chatId,
-        title: chat.title,
         messages: chat.messages.map(message => ({
           ...message,
           _id: uuid(),
@@ -271,6 +319,7 @@ export const getServerSideProps = async context => {
             ? message.messageTime.toISOString()
             : null,
         })),
+        feedback: chat.feedback || '',
       },
     };
   }

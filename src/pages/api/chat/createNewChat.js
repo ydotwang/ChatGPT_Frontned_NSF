@@ -23,6 +23,7 @@ export default async function handler(req, res) {
     const newUserMessage = {
       role: 'user',
       content: message,
+      messageTime: new Date(),
     };
 
     const client = await clientPromise;

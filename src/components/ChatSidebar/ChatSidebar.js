@@ -37,7 +37,7 @@ export const ChatSidebar = ({ chatId }) => {
         <FontAwesomeIcon icon={faPlus} aria-hidden="true" /> New chat
       </Link>
       <div
-        className="flex-1 overflow-auto bg-gray-950"
+        className="flex-1 overflow-auto bg-gray-850"
         role="region"
         aria-label="Chat list"
       >
@@ -58,7 +58,11 @@ export const ChatSidebar = ({ chatId }) => {
           </Link>
         ))}
       </div>
-      <Link href="/api/auth/logout" aria-label="Logout">
+      <Link
+        className="side-menu-item bg-red-500 hover:bg-red-600"
+        href="/api/auth/logout"
+        aria-label="Logout"
+      >
         Logout
       </Link>
     </div>

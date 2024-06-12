@@ -1,27 +1,35 @@
 import { OpenAIEdgeStream } from 'openai-edge-stream';
+import OpenAI from 'openai';
 
 export const config = {
   runtime: 'edge',
 };
 
 async function summarizeChatHistory(chatMessages) {
+  const openai = new OpenAI({
+    apiKey: process.env.OPEN_API_KEY,
+  });
   const prompt = chatMessages
     .map(msg => `${msg.role}: ${msg.content}`)
     .join('\n');
-  const response = await fetch('https://api.openai.com/v1/completions', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${process.env.OPEN_API_KEY}`,
-    },
-    body: JSON.stringify({
-      model: 'text-davinci-003',
-      prompt: `Summarize the following chat history:\n${prompt}`,
-      max_tokens: 150,
-    }),
+
+  const response = await openai.chat.completions.create({
+    model: 'gpt-3.5-turbo-16k-0613',
+    messages: [
+      {
+        role: 'system',
+        content:
+          'You are a helpful assistant that summarizes chat conversations.',
+      },
+      {
+        role: 'user',
+        content: `Summarize the following chat history:\n${prompt}`,
+      },
+    ],
+    max_tokens: 1000,
   });
-  const data = await response.json();
-  return data.choices[0].text.trim();
+
+  return response.choices[0]?.message?.content.trim();
 }
 
 export default async function handler(req) {
@@ -60,7 +68,7 @@ export default async function handler(req) {
     }
 
     // Summarize chat history if it gets too long
-    const MAX_TOKENS = 2000;
+    const MAX_TOKENS = 4000;
     let messagesToInclude = [];
     let usedTokens = 0;
     let allMessages = [];
@@ -95,7 +103,7 @@ export default async function handler(req) {
         },
         method: 'POST',
         body: JSON.stringify({
-          model: 'gpt-3.5-turbo',
+          model: 'gpt-3.5-turbo-16k-0613',
           messages: [...messagesToInclude],
           stream: true,
         }),
