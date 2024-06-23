@@ -1,9 +1,8 @@
+// src/pages/layout.js
 import { Inter } from 'next/font/google';
-import '../../src/styles/globals.css';
-// someServerSideFile.js
-import { metadata } from './metadata';
 
 const inter = Inter({ subsets: ['latin'] });
+
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
