@@ -1,5 +1,5 @@
 import { Inter } from 'next/font/google';
-import './globals.css';
+import '../../src/styles/globals.css';
 // someServerSideFile.js
 import { metadata } from './metadata';
 
