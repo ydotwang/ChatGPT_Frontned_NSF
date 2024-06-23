@@ -3,7 +3,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
-export const ChatSidebar = ({ chatId }) => {
+export const ChatSidebar = ({ chatId, generatingResponse }) => {
   const [chatList, setChatList] = useState([]);
 
   useEffect(() => {
@@ -13,9 +13,7 @@ export const ChatSidebar = ({ chatId }) => {
           method: 'POST',
         });
         const json = await response.json();
-        console.log('Chat list: ', json);
         setChatList(json?.chats || []);
-        console.log('chatID = ', chatId);
       } catch (error) {
         console.error('Failed to load chat list:', error);
       }
@@ -32,7 +30,10 @@ export const ChatSidebar = ({ chatId }) => {
       <Link
         aria-label="New Chat"
         href="/chat"
-        className="side-menu-item bg-emerald-500 hover:bg-emerald-600"
+        className={`side-menu-item bg-emerald-500 hover:bg-emerald-600 ${
+          generatingResponse ? 'pointer-events-none opacity-50' : ''
+        }`}
+        aria-disabled={generatingResponse ? 'true' : 'false'}
       >
         <FontAwesomeIcon icon={faPlus} aria-hidden="true" /> New chat
       </Link>
@@ -50,9 +51,10 @@ export const ChatSidebar = ({ chatId }) => {
             }
             className={`side-menu-item ${
               chatId === chat._id ? 'bg-gray-700' : ''
-            }`}
+            } ${generatingResponse ? 'pointer-events-none opacity-50' : ''}`}
             key={chat._id}
             href={`/chat/${chat._id}`}
+            aria-disabled={generatingResponse ? 'true' : 'false'}
           >
             <FontAwesomeIcon icon={faMessage} aria-hidden="true" /> {chat.title}
           </Link>

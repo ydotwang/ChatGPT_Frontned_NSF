@@ -133,6 +133,8 @@ export default function Home({ chatId, messages = [], feedback }) {
 
   const handleSubmit = async e => {
     e.preventDefault();
+    if (messageText.trim() === '') return;
+
     setGeneratingResponse(true);
     const currentMessageText = messageText;
     setNewChatMessages(prev => [
@@ -177,11 +179,22 @@ export default function Home({ chatId, messages = [], feedback }) {
 
   const handleKeyDown = useCallback(
     e => {
-      if (e.key === 'Enter' && (isMac ? !e.metaKey : !e.ctrlKey)) {
-        e.preventDefault();
-        handleSubmit(e);
-      } else if (e.key === 'Enter' && (isMac ? e.metaKey : e.ctrlKey)) {
-        setMessageText(prev => prev + '\n');
+      if (e.key === 'Enter') {
+        if (showIntentDialog || showAnnotationDialog || showEndChatDialog) {
+          e.preventDefault();
+          const focusedElement = document.activeElement;
+          if (focusedElement && focusedElement.tagName === 'BUTTON') {
+            focusedElement.click();
+          }
+        } else if (
+          messageText.trim() !== '' &&
+          (isMac ? !e.metaKey : !e.ctrlKey)
+        ) {
+          e.preventDefault();
+          handleSubmit(e);
+        } else if (isMac ? e.metaKey : e.ctrlKey) {
+          setMessageText(prev => prev + '\n');
+        }
       } else if (e.key === 'A' && (isMac ? e.shiftKey : e.shiftKey)) {
         e.preventDefault();
         if (chatId) {
@@ -189,7 +202,15 @@ export default function Home({ chatId, messages = [], feedback }) {
         }
       }
     },
-    [chatId, handleSubmit, isMac],
+    [
+      chatId,
+      handleSubmit,
+      isMac,
+      showIntentDialog,
+      showAnnotationDialog,
+      showEndChatDialog,
+      messageText,
+    ],
   );
 
   useEffect(() => {
@@ -231,7 +252,7 @@ export default function Home({ chatId, messages = [], feedback }) {
         <Head>
           <title>New Chat</title>
         </Head>
-        <ChatSidebar chatId={chatId} />
+        <ChatSidebar chatId={chatId} generatingResponse={generatingResponse} />
         <div className="flex flex-col overflow-hidden bg-gray-700">
           <div
             className="flex flex-1 flex-col-reverse text-white overflow-scroll"
@@ -302,13 +323,33 @@ export const getServerSideProps = async context => {
   console.log('prop chat id in chatID page = ', chatId);
 
   if (chatId) {
+    let objectId;
+
+    try {
+      objectId = new ObjectId(chatId);
+    } catch (err) {
+      console.log('error parsing chat id', err);
+      return {
+        redirect: {
+          destination: '/chat',
+          permanent: false,
+        },
+      };
+    }
     const { user } = await getSession(context.req, context.res);
     const client = await clientPromise;
     const db = client.db('NsfDatabase');
     const chat = await db
       .collection('chats')
-      .findOne({ userId: user.sub, _id: new ObjectId(chatId) });
-
+      .findOne({ userId: user.sub, _id: objectId });
+    if (!chat) {
+      return {
+        redirect: {
+          destination: '/chat',
+          permanent: false,
+        },
+      };
+    }
     return {
       props: {
         chatId,

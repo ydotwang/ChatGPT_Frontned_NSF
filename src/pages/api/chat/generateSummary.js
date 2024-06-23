@@ -19,7 +19,7 @@ async function summarizeChatHistory(chatMessages) {
         content: `
         Chat history:
 ${prompt}
-        Based on the following chat history, provide a summary of the user experience in less than 100 words, focusing on the flow of the conversation from the user's perspective. Make it sound like a human explaining the interaction and dont use the word user, say "you" instead of user and say "chatgpt" instead of assistant. Dont use the word 'userexperience' . Keep the tone, spartan and  unbiased and neutral to reflect true user experience. Dont use filler words and do not be biased towards chatGPT!:
+        Based on the following chat history, provide a summary of the conversation in 100 words or less. Make it sound like a human explaining the interaction and dont use the word user, say "you" instead of user and say "chatgpt" instead of assistant.:
 
 `,
       },

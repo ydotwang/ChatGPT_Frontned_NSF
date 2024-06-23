@@ -2,7 +2,8 @@ import React, { useEffect, useState } from 'react';
 
 const EndChatDialog = ({ chatId, messages, onSubmit, onClose }) => {
   const [summary, setSummary] = useState('');
-  const [feedback, setFeedback] = useState('');
+  const [whatWentWell, setWhatWentWell] = useState('');
+  const [whatDidntGoWell, setWhatDidntGoWell] = useState('');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -32,6 +33,7 @@ const EndChatDialog = ({ chatId, messages, onSubmit, onClose }) => {
   }, [messages]);
 
   const handleSubmit = () => {
+    const feedback = `What went well: ${whatWentWell}\nWhat didn't go well: ${whatDidntGoWell}`;
     onSubmit(feedback);
   };
 
@@ -52,11 +54,18 @@ const EndChatDialog = ({ chatId, messages, onSubmit, onClose }) => {
           <>
             <p className="mb-4">{summary}</p>
             <textarea
-              value={feedback}
-              onChange={e => setFeedback(e.target.value)}
-              placeholder="Provide your feedback..."
-              className="w-full h-24 p-2 border border-gray-600 rounded-md bg-gray-700 text-white"
-              aria-label="Feedback text area"
+              value={whatWentWell}
+              onChange={e => setWhatWentWell(e.target.value)}
+              placeholder="What went well..."
+              className="w-full h-24 p-2 mb-4 border border-gray-600 rounded-md bg-gray-700 text-white"
+              aria-label="What went well text area"
+            />
+            <textarea
+              value={whatDidntGoWell}
+              onChange={e => setWhatDidntGoWell(e.target.value)}
+              placeholder="What didn't go well..."
+              className="w-full h-24 p-2 mb-4 border border-gray-600 rounded-md bg-gray-700 text-white"
+              aria-label="What didn't go well text area"
             />
             <div className="flex justify-end mt-4">
               <button
