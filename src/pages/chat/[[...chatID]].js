@@ -183,12 +183,16 @@ export default function Home({ chatId, messages = [], feedback }) {
   const handleKeyDown = useCallback(
     e => {
       // Enhanced Mac detection - check both platform and userAgent
-      const isMacPlatform = typeof window !== 'undefined' && 
+      const isMacPlatform =
+        typeof window !== 'undefined' &&
         (/Mac|iPod|iPhone|iPad/.test(window.navigator.platform) ||
-         /Mac/.test(window.navigator.userAgent));
-  
+          /Mac/.test(window.navigator.userAgent));
+
       // Debug logging for all relevant key presses
-      if ((e.key === '0' || e.keyCode === 48) && (e.metaKey || e.ctrlKey || e.altKey)) {
+      if (
+        (e.key === '0' || e.keyCode === 48) &&
+        (e.metaKey || e.ctrlKey || e.altKey)
+      ) {
         console.log('Key event detected:', {
           key: e.key,
           keyCode: e.keyCode,
@@ -198,10 +202,10 @@ export default function Home({ chatId, messages = [], feedback }) {
           optionKey: e.altKey,
           isMacPlatform,
           platform: window.navigator.platform,
-          userAgent: window.navigator.userAgent
+          userAgent: window.navigator.userAgent,
         });
       }
-  
+
       if (e.key === 'Enter') {
         if (showIntentDialog || showAnnotationDialog || showEndChatDialog) {
           e.preventDefault();
@@ -218,9 +222,9 @@ export default function Home({ chatId, messages = [], feedback }) {
         } else if (isMacPlatform ? e.metaKey : e.ctrlKey) {
           setMessageText(prev => prev + '\n');
         }
-      } 
+      }
       // Check for annotation shortcut
-      else if ((e.key === '0' || e.keyCode === 48)) {
+      else if (e.key === '0' || e.keyCode === 48) {
         // For Mac: Command (Meta) + Option (Alt) + 0
         if (isMacPlatform && e.metaKey && e.altKey) {
           e.preventDefault();
@@ -249,13 +253,7 @@ export default function Home({ chatId, messages = [], feedback }) {
       showEndChatDialog,
       messageText,
     ],
-    
-  useEffect(() => {
-    window.addEventListener('keydown', handleKeyDown);
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [handleKeyDown]);
+  );
 
   const allMessages = [...messages, ...newChatMessages];
   return (
