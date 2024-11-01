@@ -27,11 +27,7 @@ export default function Home({ chatId, messages = [], feedback }) {
   const { user } = useUser();
   const [fullMessage, setFullMessage] = useState('');
   const [chatFeedback, setChatFeedback] = useState(feedback ? feedback : '');
-  const isMac =
-    typeof window !== 'undefined' &&
-    /Mac|iPod|iPhone|iPad/.test(window.navigator.platform);
-
-  const router = useRouter();
+  const [isMac, setIsMac] = useState(false);
 
   const handleIntentSubmit = async intent => {
     const response = await fetch('/api/chat/saveIntent', {
@@ -177,8 +173,35 @@ export default function Home({ chatId, messages = [], feedback }) {
     setGeneratingResponse(false);
   };
 
+  useEffect(() => {
+    setIsMac(
+      /Mac|iPod|iPhone|iPad/.test(window.navigator.platform) ||
+        /Mac/.test(window.navigator.userAgent),
+    );
+  }, []);
+
   const handleKeyDown = useCallback(
     e => {
+      // Enhanced Mac detection - check both platform and userAgent
+      const isMacPlatform = typeof window !== 'undefined' && 
+        (/Mac|iPod|iPhone|iPad/.test(window.navigator.platform) ||
+         /Mac/.test(window.navigator.userAgent));
+  
+      // Debug logging for all relevant key presses
+      if ((e.key === '0' || e.keyCode === 48) && (e.metaKey || e.ctrlKey || e.altKey)) {
+        console.log('Key event detected:', {
+          key: e.key,
+          keyCode: e.keyCode,
+          metaKey: e.metaKey,
+          ctrlKey: e.ctrlKey,
+          altKey: e.altKey,
+          optionKey: e.altKey,
+          isMacPlatform,
+          platform: window.navigator.platform,
+          userAgent: window.navigator.userAgent
+        });
+      }
+  
       if (e.key === 'Enter') {
         if (showIntentDialog || showAnnotationDialog || showEndChatDialog) {
           e.preventDefault();
@@ -188,31 +211,45 @@ export default function Home({ chatId, messages = [], feedback }) {
           }
         } else if (
           messageText.trim() !== '' &&
-          (isMac ? !e.metaKey : !e.ctrlKey)
+          (isMacPlatform ? !e.metaKey : !e.ctrlKey)
         ) {
           e.preventDefault();
           handleSubmit(e);
-        } else if (isMac ? e.metaKey : e.ctrlKey) {
+        } else if (isMacPlatform ? e.metaKey : e.ctrlKey) {
           setMessageText(prev => prev + '\n');
         }
-      } else if (e.key === 'A' && (isMac ? e.shiftKey : e.shiftKey)) {
-        e.preventDefault();
-        if (chatId) {
-          setShowAnnotationDialog(true);
+      } 
+      // Check for annotation shortcut
+      else if ((e.key === '0' || e.keyCode === 48)) {
+        // For Mac: Command (Meta) + Option (Alt) + 0
+        if (isMacPlatform && e.metaKey && e.altKey) {
+          e.preventDefault();
+          console.log('Mac annotation shortcut triggered');
+          if (chatId) {
+            setShowAnnotationDialog(true);
+            return;
+          }
+        }
+        // For Windows: Ctrl + Alt + 0
+        else if (!isMacPlatform && e.ctrlKey && e.altKey) {
+          e.preventDefault();
+          console.log('Windows annotation shortcut triggered');
+          if (chatId) {
+            setShowAnnotationDialog(true);
+            return;
+          }
         }
       }
     },
     [
       chatId,
       handleSubmit,
-      isMac,
       showIntentDialog,
       showAnnotationDialog,
       showEndChatDialog,
       messageText,
     ],
-  );
-
+    
   useEffect(() => {
     window.addEventListener('keydown', handleKeyDown);
     return () => {
