@@ -29,6 +29,8 @@ export default function Home({ chatId, messages = [], feedback }) {
   const [chatFeedback, setChatFeedback] = useState(feedback ? feedback : '');
   const [isMac, setIsMac] = useState(false);
 
+  const router = useRouter();
+
   const handleIntentSubmit = async intent => {
     const response = await fetch('/api/chat/saveIntent', {
       method: 'POST',
@@ -119,7 +121,7 @@ export default function Home({ chatId, messages = [], feedback }) {
       setNewChatId(null);
       router.push(`/chat/${newChatId}`);
     }
-  }, [newChatId, generatingResponse]);
+  }, [newChatId, generatingResponse, router]);
 
   useEffect(() => {
     setNewChatMessages([]);
@@ -254,6 +256,14 @@ export default function Home({ chatId, messages = [], feedback }) {
       messageText,
     ],
   );
+
+  // Added the missing useEffect hook for keyboard event listener
+  useEffect(() => {
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [handleKeyDown]);
 
   const allMessages = [...messages, ...newChatMessages];
   return (
