@@ -14,7 +14,7 @@ import IntentDialog from '@/components/IntentDialog';
 import AnnotationDialog from '@/components/AnnotationDialog';
 import EndChatDialog from '@/components/EndChatDialog';
 
-export default function Home({ chatId, messages = [], feedback }) {
+export default function Home({ chatId, messages = [], feedback, isEnded }) {
   const [showLoginMessage, setshowLoginMessage] = useState(true);
   const [newChatId, setNewChatId] = useState(null);
   const [incomingMessage, setIncomingMessage] = useState('');
@@ -24,11 +24,11 @@ export default function Home({ chatId, messages = [], feedback }) {
   const [showIntentDialog, setShowIntentDialog] = useState(false);
   const [showAnnotationDialog, setShowAnnotationDialog] = useState(false);
   const [showEndChatDialog, setShowEndChatDialog] = useState(false);
+  const [isChatEnded, setIsChatEnded] = useState(isEnded);
   const { user } = useUser();
   const [fullMessage, setFullMessage] = useState('');
-  const [chatFeedback, setChatFeedback] = useState(feedback ? feedback : '');
+  const [chatFeedback, setChatFeedback] = useState(feedback || '');
   const [isMac, setIsMac] = useState(false);
-
   const router = useRouter();
 
   const handleIntentSubmit = async intent => {
@@ -40,20 +40,11 @@ export default function Home({ chatId, messages = [], feedback }) {
       body: JSON.stringify({ chatId, intent }),
     });
     const data = await response.json();
-
     if (data.message === 'Intent saved successfully') {
       setShowIntentDialog(false);
     } else {
       alert('An error occurred while saving your intent. Please try again.');
     }
-  };
-
-  const handleIntentClear = () => {
-    setShowIntentDialog(true);
-  };
-
-  const handleAcknowledge = () => {
-    setshowLoginMessage(false);
   };
 
   const handleAnnotationSubmit = async annotation => {
@@ -65,7 +56,6 @@ export default function Home({ chatId, messages = [], feedback }) {
       body: JSON.stringify({ chatId, annotation }),
     });
     const data = await response.json();
-
     if (data.message === 'Annotation saved successfully') {
       setShowAnnotationDialog(false);
     } else {
@@ -80,22 +70,37 @@ export default function Home({ chatId, messages = [], feedback }) {
   };
 
   const handleEndChatSubmit = async feedback => {
-    const response = await fetch('/api/chat/saveFeedback', {
-      method: 'POST',
-      headers: {
-        'content-type': 'application/json',
-      },
-      body: JSON.stringify({ chatId, feedback }),
-    });
-    const data = await response.json();
+    try {
+      const response = await fetch('/api/chat/saveFeedback', {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({ chatId, feedback }),
+      });
+      const data = await response.json();
 
-    if (data.message === 'Feedback saved successfully') {
-      setShowEndChatDialog(false);
-      setChatFeedback(feedback);
-    } else {
+      if (data.message === 'Feedback saved successfully') {
+        setShowEndChatDialog(false);
+        setChatFeedback(feedback);
+        setIsChatEnded(true);
+      } else {
+        alert(
+          'An error occurred while saving your feedback. Please try again.',
+        );
+      }
+    } catch (error) {
       alert('An error occurred while saving your feedback. Please try again.');
     }
   };
+
+  const handleAcknowledge = () => {
+    setshowLoginMessage(false);
+  };
+
+  useEffect(() => {
+    setIsChatEnded(isEnded);
+  }, [chatId, isEnded]);
 
   useEffect(() => {
     if (!generatingResponse && fullMessage) {
@@ -126,7 +131,7 @@ export default function Home({ chatId, messages = [], feedback }) {
   useEffect(() => {
     setNewChatMessages([]);
     setNewChatId(null);
-    setChatFeedback(feedback ? feedback : '');
+    setChatFeedback(feedback || '');
   }, [chatId, feedback]);
 
   const handleSubmit = async e => {
@@ -184,29 +189,10 @@ export default function Home({ chatId, messages = [], feedback }) {
 
   const handleKeyDown = useCallback(
     e => {
-      // Enhanced Mac detection - check both platform and userAgent
       const isMacPlatform =
         typeof window !== 'undefined' &&
         (/Mac|iPod|iPhone|iPad/.test(window.navigator.platform) ||
           /Mac/.test(window.navigator.userAgent));
-
-      // Debug logging for all relevant key presses
-      if (
-        (e.key === '0' || e.keyCode === 48) &&
-        (e.metaKey || e.ctrlKey || e.altKey)
-      ) {
-        console.log('Key event detected:', {
-          key: e.key,
-          keyCode: e.keyCode,
-          metaKey: e.metaKey,
-          ctrlKey: e.ctrlKey,
-          altKey: e.altKey,
-          optionKey: e.altKey,
-          isMacPlatform,
-          platform: window.navigator.platform,
-          userAgent: window.navigator.userAgent,
-        });
-      }
 
       if (e.key === 'Enter') {
         if (showIntentDialog || showAnnotationDialog || showEndChatDialog) {
@@ -224,25 +210,16 @@ export default function Home({ chatId, messages = [], feedback }) {
         } else if (isMacPlatform ? e.metaKey : e.ctrlKey) {
           setMessageText(prev => prev + '\n');
         }
-      }
-      // Check for annotation shortcut
-      else if (e.key === '0' || e.keyCode === 48) {
-        // For Mac: Command (Meta) + Option (Alt) + 0
+      } else if (e.key === '0' || e.keyCode === 48) {
         if (isMacPlatform && e.metaKey && e.altKey) {
           e.preventDefault();
-          console.log('Mac annotation shortcut triggered');
           if (chatId) {
             setShowAnnotationDialog(true);
-            return;
           }
-        }
-        // For Windows: Ctrl + Alt + 0
-        else if (!isMacPlatform && e.ctrlKey && e.altKey) {
+        } else if (!isMacPlatform && e.ctrlKey && e.altKey) {
           e.preventDefault();
-          console.log('Windows annotation shortcut triggered');
           if (chatId) {
             setShowAnnotationDialog(true);
-            return;
           }
         }
       }
@@ -266,12 +243,13 @@ export default function Home({ chatId, messages = [], feedback }) {
   }, [handleKeyDown]);
 
   const allMessages = [...messages, ...newChatMessages];
+
   return (
     <>
       {showIntentDialog && (
         <IntentDialog
           onSubmit={handleIntentSubmit}
-          onClear={handleIntentClear}
+          onClear={() => setShowIntentDialog(false)}
         />
       )}
       {showAnnotationDialog && (
@@ -288,84 +266,106 @@ export default function Home({ chatId, messages = [], feedback }) {
           onClose={() => setShowEndChatDialog(false)}
         />
       )}
-      {showLoginMessage && <LoginMessage onAcknowledge={handleAcknowledge} />}{' '}
-      <div
-        className={`grid h-screen grid-cols-[260px_1fr] ${
-          showLoginMessage ? 'hidden' : ''
-        }`}
-      >
+      {showLoginMessage && <LoginMessage onAcknowledge={handleAcknowledge} />}
+
+      <div className={`fixed inset-0 ${showLoginMessage ? 'hidden' : ''}`}>
         <Head>
           <title>New Chat</title>
         </Head>
-        <ChatSidebar chatId={chatId} generatingResponse={generatingResponse} />
-        <div className="flex flex-col overflow-hidden bg-gray-700">
-          <div
-            className="flex flex-1 flex-col-reverse text-white overflow-scroll"
-            role="main"
-            aria-label="Chat messages"
-          >
-            <div className="mb-auto">
-              {allMessages
-                .filter(
-                  message =>
-                    message.role === 'user' || message.role === 'assistant',
-                )
-                .map(message => (
-                  <Message
-                    key={message._id}
-                    role={message.role}
-                    content={message.content}
-                    user={user}
-                  />
-                ))}
-              {!!incomingMessage && (
-                <Message role="assistant" content={incomingMessage} />
-              )}
-            </div>
+
+        <div className="h-screen grid grid-cols-[260px_1fr]">
+          <div className="h-screen overflow-hidden">
+            <ChatSidebar
+              chatId={chatId}
+              generatingResponse={generatingResponse}
+            />
           </div>
-          <footer
-            className="bg-gray-800 p-8"
-            role="contentinfo"
-            aria-label="Message input area"
-          >
-            <form onSubmit={handleSubmit} aria-label="Send message form">
-              <fieldset
-                className="flex gap-2"
-                disabled={
-                  generatingResponse || showIntentDialog || chatFeedback !== ''
-                }
-              >
-                <textarea
-                  value={messageText}
-                  onChange={e => setMessageText(e.target.value)}
-                  placeholder={generatingResponse ? '' : 'Send a message...'}
-                  className="w-full resize-none rounded-md bg-gray-700 px-5 py-1 text-white"
-                  aria-label="Message text area"
-                ></textarea>
-                <button className="btn" type="submit" aria-label="Send message">
-                  Send
-                </button>
-                <button
-                  type="button"
-                  onClick={handleEndChat}
-                  className="btn bg-red-600 text-white hover:bg-red-800"
-                  aria-label="End chat"
+
+          <div className="flex flex-col h-screen bg-gray-700">
+            <div
+              className="flex-1 overflow-y-auto"
+              role="main"
+              aria-label="Chat messages"
+            >
+              <div className="flex flex-col justify-end min-h-full">
+                <div>
+                  {allMessages
+                    .filter(
+                      message =>
+                        message.role === 'user' || message.role === 'assistant',
+                    )
+                    .map(message => (
+                      <Message
+                        key={message._id}
+                        role={message.role}
+                        content={message.content}
+                        user={user}
+                      />
+                    ))}
+                  {!!incomingMessage && (
+                    <Message role="assistant" content={incomingMessage} />
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <footer
+              className="flex-shrink-0 bg-gray-800 p-8"
+              role="contentinfo"
+              aria-label="Message input area"
+            >
+              <form onSubmit={handleSubmit} aria-label="Send message form">
+                <fieldset
+                  className="flex gap-2"
+                  disabled={
+                    generatingResponse ||
+                    showIntentDialog ||
+                    showEndChatDialog ||
+                    isChatEnded
+                  }
                 >
-                  End Chat
-                </button>
-              </fieldset>
-            </form>
-          </footer>
+                  <textarea
+                    value={messageText}
+                    onChange={e => setMessageText(e.target.value)}
+                    placeholder={
+                      isChatEnded
+                        ? 'Chat ended'
+                        : generatingResponse
+                        ? ''
+                        : 'Send a message...'
+                    }
+                    className="w-full resize-none rounded-md bg-gray-700 px-5 py-1 text-white"
+                    aria-label="Message text area"
+                  ></textarea>
+                  <button
+                    className="btn"
+                    type="submit"
+                    aria-label="Send message"
+                  >
+                    Send
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleEndChat}
+                    className="btn bg-red-600 text-white hover:bg-red-800"
+                    aria-label="End chat"
+                  >
+                    End Chat
+                  </button>
+                </fieldset>
+              </form>
+            </footer>
+          </div>
         </div>
       </div>
     </>
   );
 }
 
+// Previous imports remain the same...
+
 export const getServerSideProps = async context => {
-  console.log('prop chat id in chat param page = ', context.params);
   const chatId = context.params?.chatID?.[0] || null;
-  console.log('prop chat id in chatID page = ', chatId);
 
   if (chatId) {
     let objectId;
@@ -373,7 +373,7 @@ export const getServerSideProps = async context => {
     try {
       objectId = new ObjectId(chatId);
     } catch (err) {
-      console.log('error parsing chat id', err);
+      console.error('Error parsing chat id:', err);
       return {
         redirect: {
           destination: '/chat',
@@ -381,12 +381,14 @@ export const getServerSideProps = async context => {
         },
       };
     }
+
     const { user } = await getSession(context.req, context.res);
     const client = await clientPromise;
     const db = client.db('NsfDatabase');
     const chat = await db
       .collection('chats')
       .findOne({ userId: user.sub, _id: objectId });
+
     if (!chat) {
       return {
         redirect: {
@@ -395,6 +397,17 @@ export const getServerSideProps = async context => {
         },
       };
     }
+
+    // Serialize the feedback object if it exists
+    const serializedFeedback = chat.feedback
+      ? {
+          ...chat.feedback,
+          submittedAt: chat.feedback.submittedAt
+            ? chat.feedback.submittedAt.toISOString()
+            : null,
+        }
+      : '';
+
     return {
       props: {
         chatId,
@@ -405,7 +418,8 @@ export const getServerSideProps = async context => {
             ? message.messageTime.toISOString()
             : null,
         })),
-        feedback: chat.feedback || '',
+        feedback: serializedFeedback,
+        isEnded: Boolean(chat.feedback),
       },
     };
   }
