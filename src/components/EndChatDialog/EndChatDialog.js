@@ -81,7 +81,7 @@ const EndChatDialog = ({ chatId, messages, onSubmit, onClose }) => {
 
         {loading ? (
           <p role="status" aria-live="polite">
-            Loading chat summary...
+            Loading feedback form...
           </p>
         ) : (
           <form
@@ -90,12 +90,12 @@ const EndChatDialog = ({ chatId, messages, onSubmit, onClose }) => {
               handleSubmit();
             }}
           >
-            <div className="mb-6">
+            {/* <div className="mb-6">
               <h3 className="text-lg font-semibold mb-2">Chat Summary</h3>
               <p className="mb-4" role="status" aria-live="polite">
                 {summary}
               </p>
-            </div>
+            </div> */}
 
             <div className="mb-4">
               <label htmlFor="whatWentWell" className="block mb-2 font-medium">
