@@ -1,3 +1,4 @@
+// EndChatDialog.js
 import React, { useEffect, useState } from 'react';
 
 const EndChatDialog = ({ chatId, messages, onSubmit, onClose }) => {
@@ -28,62 +29,127 @@ const EndChatDialog = ({ chatId, messages, onSubmit, onClose }) => {
         setLoading(false);
       }
     };
-
     generateSummary();
   }, [messages]);
 
   const handleSubmit = () => {
-    const feedback = `What went well: ${whatWentWell}\nWhat didn't go well: ${whatDidntGoWell}`;
-    onSubmit(feedback);
+    onSubmit({
+      whatWentWell,
+      whatDidntGoWell,
+    });
   };
+
+  // Handle escape key to close dialog
+  useEffect(() => {
+    const handleEscape = event => {
+      if (event.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    document.addEventListener('keydown', handleEscape);
+    return () => {
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, [onClose]);
 
   return (
     <div
       role="dialog"
       aria-labelledby="end-chat-dialog-title"
+      aria-describedby="dialog-description"
       aria-modal="true"
       className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50"
+      onClick={e => {
+        if (e.target === e.currentTarget) onClose();
+      }}
     >
-      <div className="bg-gray-800 p-8 rounded-md shadow-lg w-full max-w-md text-white">
-        <h2 id="end-chat-dialog-title" className="text-xl font-bold mb-4">
-          End Chat
-        </h2>
+      <div
+        className="bg-gray-800 p-8 rounded-md shadow-lg w-full max-w-md text-white"
+        onClick={e => e.stopPropagation()}
+      >
+        <header>
+          <h2 id="end-chat-dialog-title" className="text-xl font-bold mb-4">
+            End Chat
+          </h2>
+        </header>
+
+        <div id="dialog-description" className="sr-only">
+          Dialog to provide feedback about the chat session. Contains a chat
+          summary and two feedback sections.
+        </div>
+
         {loading ? (
-          <p>Loading summary...</p>
+          <p role="status" aria-live="polite">
+            Loading chat summary...
+          </p>
         ) : (
-          <>
-            <p className="mb-4">{summary}</p>
-            <textarea
-              value={whatWentWell}
-              onChange={e => setWhatWentWell(e.target.value)}
-              placeholder="What went well..."
-              className="w-full h-24 p-2 mb-4 border border-gray-600 rounded-md bg-gray-700 text-white"
-              aria-label="What went well text area"
-            />
-            <textarea
-              value={whatDidntGoWell}
-              onChange={e => setWhatDidntGoWell(e.target.value)}
-              placeholder="What didn't go well..."
-              className="w-full h-24 p-2 mb-4 border border-gray-600 rounded-md bg-gray-700 text-white"
-              aria-label="What didn't go well text area"
-            />
-            <div className="flex justify-end mt-4">
-              <button
-                onClick={handleSubmit}
-                className="btn mr-2 bg-emerald-500 text-white hover:bg-emerald-700"
-                aria-label="Submit feedback"
+          <form
+            onSubmit={e => {
+              e.preventDefault();
+              handleSubmit();
+            }}
+          >
+            <div className="mb-6">
+              <h3 className="text-lg font-semibold mb-2">Chat Summary</h3>
+              <p className="mb-4" role="status" aria-live="polite">
+                {summary}
+              </p>
+            </div>
+
+            <div className="mb-4">
+              <label htmlFor="whatWentWell" className="block mb-2 font-medium">
+                What went well?
+              </label>
+              <textarea
+                id="whatWentWell"
+                value={whatWentWell}
+                onChange={e => setWhatWentWell(e.target.value)}
+                placeholder="Share your positive experiences..."
+                className="w-full h-24 p-2 mb-1 border border-gray-600 rounded-md bg-gray-700 text-white"
+                aria-required="true"
+              />
+            </div>
+
+            <div className="mb-6">
+              <label
+                htmlFor="whatDidntGoWell"
+                className="block mb-2 font-medium"
               >
-                Submit
+                What could be improved?
+              </label>
+              <textarea
+                id="whatDidntGoWell"
+                value={whatDidntGoWell}
+                onChange={e => setWhatDidntGoWell(e.target.value)}
+                placeholder="Share your suggestions for improvement..."
+                className="w-full h-24 p-2 mb-1 border border-gray-600 rounded-md bg-gray-700 text-white"
+                aria-required="true"
+              />
+            </div>
+
+            <div
+              className="flex justify-end mt-4 gap-3"
+              role="group"
+              aria-label="Dialog actions"
+            >
+              <button
+                type="submit"
+                className="btn bg-emerald-500 text-white hover:bg-emerald-700 focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 focus:ring-offset-gray-800"
+                aria-label="Submit feedback and end chat"
+              >
+                Submit & End Chat
               </button>
               <button
+                type="button"
                 onClick={onClose}
-                className="btn bg-blue-500 text-white hover:bg-blue-700"
-                aria-label="Close dialog"
+                className="btn bg-blue-500 text-white hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-800"
+                aria-label="Cancel and continue chat"
               >
-                Close
+                Cancel
               </button>
             </div>
-          </>
+          </form>
         )}
       </div>
     </div>
