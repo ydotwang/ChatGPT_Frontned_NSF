@@ -22,7 +22,7 @@ const IntentDialog = ({ onSubmit, onClear }) => {
 
   return (
     <div
-      className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50"
+      className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-[9999]"
       role="dialog"
       aria-labelledby="intent-dialog-title"
       aria-describedby="intent-dialog-description"
